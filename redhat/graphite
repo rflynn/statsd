@@ -1,18 +1,17 @@
 #!/bin/bash
 #
-#	/etc/rc.d/init.d/statsd
+#	/etc/rc.d/init.d/graphite
 #
-# Starts the statsd daemon
+# Starts the graphite carbon-cache daemon
 #
 # chkconfig: ?
 # description: Frontend aggregatation of messages destined for graphite daemon
-# processname: statsd
+# processname: carbon-cache.py
 
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-[ -x /usr/local/bin/node ] || exit 0
-[ -f /opt/statsd/stats.js ] || exit 0
+[ -f /opt/graphite/bin/carbon-cache.py ] || exit 0
 
 RETVAL=0
 
@@ -22,13 +21,12 @@ RETVAL=0
 
 start() {
 	# Check if it is already running
-	if [ ! -f /var/lock/subsys/statsd ]; then
-	    echo -n $"Starting statsd daemon: "
-        # daemon
-        /usr/local/bin/node /opt/statsd/stats.js /opt/statsd/exampleConfig.js 2>&1 >/dev/null &
+	if [ ! -f /var/lock/subsys/graphite ]; then
+	    echo -n $"Starting carbon-cache daemon: "
+        /opt/graphite/bin/carbon-cache.py start
 	    RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
-            touch /var/lock/subsys/statsd
+            touch /var/lock/subsys/graphite
             echo_success
         else
             echo_failure
@@ -39,12 +37,11 @@ start() {
 }
 
 stop() {
-	echo -n $"Stopping statsd daemon: "
-    pid=$(ps wax | grep stats.js | grep node | awk '{print $1}')
-    kill $pid
+	echo -n $"Stopping carbon-cache daemon: "
+    /opt/graphite/bin/carbon-cache.py stop
 	RETVAL=$?
     if [ $RETVAL -eq 0 ]; then
-        rm -f /var/lock/subsys/statsd
+        rm -f /var/lock/subsys/graphite
         echo_success
     else
         echo_failure
@@ -61,7 +58,7 @@ restart() {
 
 reload() {
 	trap "" SIGHUP
-	killall -HUP stats.js
+	killall -HUP carbon-cache
 }	
 
 case "$1" in
@@ -78,16 +75,16 @@ restart)
 	restart
 	;;
 condrestart)
-	if [ -f /var/lock/subsys/statsd ]; then
+	if [ -f /var/lock/subsys/graphite ]; then
 	    restart
 	fi
 	;;
 status)
-	if [ -f /var/lock/subsys/statsd ]; then
-        echo "statsd is running"
+	if [ -f /var/lock/subsys/graphite ]; then
+        echo "carbon-cache is running"
         exit 0
     else
-        echo "statsd is stopped"
+        echo "carbon-cache is stopped"
         exit 3
     fi
 	;;
